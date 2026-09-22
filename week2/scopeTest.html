@@ -8,18 +8,22 @@
     <script>
 
         const test = x => document.writeln( String(x));
+        //
+        // var x = 0;
+        //
+        // {
+        //     var x = 1; // fail! needs IIFE
+        //     test(x);
+        // }
+        // test(x);
 
-        let x = 0;
-        function foo() {
-            let x = 1;
-            document.writeln(String(x));
-        }
-        foo();
-        document.writeln(String(x));
+        const id    = y => y;
+        const Konst = f => bs => f;
+        const Kite  = Konst (id) ; // combinator
 
-        // test( id(id) === id);
-        // test( Konst(id)(undefined) === id);
-        // test( Kite(undefined)(id) === id);
+        test( id(id) === id);
+        test( Konst(id)(undefined) === id);
+        test( Kite(undefined)(id) === id);
 
     </script>
 </body>
