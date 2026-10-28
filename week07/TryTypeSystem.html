@@ -8,12 +8,26 @@
 
 <script>
 
+    /**
+     * @typedef ABType
+     * @property { Number } a - some text
+     * @property { "a"|"b"|"c" } b - some text
+     */
+    /** @type { ABType } */
+    const x =  {a:1,b:"c"};
 
-    const foo = arg => {
-        return (arg + 1);
+    /** @type { Array<Number> } */
+    const arr = [1,2,3];
+
+    /**
+     * @type  { <_T_>  (argument:_T_) => _T_ }
+     */
+    const addOne = argument => {
+        return (argument + 1);
     };
 
-    document.writeln( foo(42) );
+    document.writeln( String(addOne(42)) );
+    document.writeln(addOne("42") );
 
 </script>
 
