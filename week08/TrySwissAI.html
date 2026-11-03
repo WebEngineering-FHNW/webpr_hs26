@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Swiss AI</title>
+    <style>
+        main {
+            margin: 3lh auto auto 3em;
+        }
+
+        .form {
+            display:               grid;
+            grid-template-columns: max-content max-content;
+            gap:                   .5lh 2em;
+            max-width:             40ch;
+        }
+
+        output {
+            display:    block;
+            text-wrap:  wrap;
+            max-width:  40ch;
+            min-height: 2lh;
+            margin-top: 2lh;
+        }
+
+        .wait {
+            aspect-ratio: 1 / 1;
+            --angle:      0deg;
+            background:   conic-gradient(from var(--angle) in hsl longer hue, red, red);
+            animation:    turn 5s alternate infinite;
+        }
+
+        @keyframes turn {
+            100% {
+                --angle: 360deg;
+            }
+        }
+
+        @property --angle {
+            syntax:        "<angle>";
+            initial-value: 0deg;
+            inherits:      false;
+        }
+
+    </style>
+</head>
+<body>
+
+
+<main>
+    <h1><a href="https://fhnw-hpc.pages.fhnw.ch/docs/llm-server/">Swiss AI</a></h1>
+    
+
+    <div class="form">
+        <label for="service">Service</label><input size="50" id ="service" name="service" value="https://api.swissai.svc.cscs.ch/v1/chat/completions">
+        <label for="key">Key</label>        <input size="50" id ="key"     name="key"     type="password">
+        <label for="model">Model</label>    <input size="50" id ="model"   name="model"   value="-- refresh --">
+        <label for="content">Content</label><textarea id ="content" name="content" ></textarea>
+
+        <label for="format">Format</label>
+            <select id ="format"   name="format" >
+                <option></option>
+                <option>Formatiere die Antwort ohne Markdown Zeichen als HTML snippet.</option>
+                <option>Formatiere die Antwort ohne Markdown Zeichen als HTML unordered list.</option>
+                <option>Formatiere die Antwort ohne Markdown Zeichen als HTML table.</option>
+                <option>Formatiere die Antwort ohne Markdown Zeichen als JSON.</option>
+            </select>
+
+        <label for="go">Go</label>
+        <div>
+            <button id="go"     >Submit</button>
+            <button id="refresh">Refresh</button>
+        </div>
+    </div>
+    <output id="out">
+
+        no content, yet
+
+    </output>
+
+</main>
+
+<script>
+    const client = (url, method = 'GET', data = null) => {
+        const request = {
+            method:      method,             // *GET, POST, PUT, DELETE, etc.
+            headers: {
+                'Content-Type': 'application/json', // 'application/x-www-form-urlencoded'
+                'Authorization': 'Bearer '+key.value
+            },
+        };
+        if (null != data) {
+            request.body = JSON.stringify(data)
+        }
+        return fetch(url, request)
+            .then(resp => {                             // fetch API cares for the general error handling
+                if (resp.ok) {
+                    return resp.json()
+                }
+                if (Number(resp.status) < 400) {
+                    console.debug("status", resp.status);
+                    return resp.text();
+                }
+                return Promise.reject(resp.status);
+            })
+    };
+    go.onclick = _evt => {
+        const data = {
+            "model": document.getElementById("model").value,
+            "messages": [
+              {
+                "role": "user",
+                "content": content.value + "" + format.value
+              }
+            ],
+            "stream": false
+          };
+        out.classList.add("wait");
+        client(service.value, "POST", data)
+            .then( answer => out.innerHTML = answer.choices[0].message.content)
+            .catch( e => console.error(e))
+            .finally( () => out.classList.remove("wait"))
+    };
+    refresh.onclick = _evt => {
+        client('https://api.swissai.svc.cscs.ch/v1/models', "GET")
+            .then( models => {
+                const ids = new Set(models.data
+                  .filter(  model => model.has_service && model.status === "ready")
+                  .map(     model => model.id )
+                  .toSorted()
+                );
+                const select = document.createElement("SELECT");
+                select.setAttribute("id","model");
+                let optionStr = "";
+                ids.values().forEach( id => {
+                    optionStr += `<option value="${id}">${id}</option>`;
+                });
+                select.innerHTML = optionStr;
+                document.getElementById("model").replaceWith(select);
+            })
+            .catch( e => console.error(e))
+    }
+</script>
+
+<!--https://api.swissai.svc.cscs.ch/docs#/default/list_models_v1_models_get -->
+</body>
+
+</html>
